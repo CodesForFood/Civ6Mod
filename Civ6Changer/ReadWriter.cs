@@ -12,18 +12,66 @@ namespace Civ6Changer
     {        
         XmlDocument Doc { get; set; }
         string PathName { get; set; }
-        string DirName { get; }
+        string BaseDirName { get; }
+        string DLCDirName { get; }
 
         XmlNode MainNode { get; set; }
         XmlNodeList RowNodes { get { return MainNode.ChildNodes; } }
-       
+
+        public const int RATE = 12;
 
 
-        public ReadWriter(DirectoryInfo dir)
+
+
+        public ReadWriter(string baseName, string dlcName)
         {
             Doc = new XmlDocument();
-            DirName = dir.FullName;
+            BaseDirName = baseName;
+            DLCDirName = dlcName;
         }    
+
+        public ReadWriter(string baseName)
+        {
+            Doc = new XmlDocument();
+            BaseDirName = baseName;
+            DLCDirName = "None";
+        }
+
+
+        public void ChangeGame()
+        {
+            DoTechnologies();
+            DoCivics();
+            DoLeaders();
+            DoUnits();
+            DoMaps();
+            DoRoutes();
+            DoPolicies();
+            DoGlobalParameters();
+        }
+        
+        public void ChangeDLC()
+        {
+            DoExpansionRoutes();
+            DoExpansionTechs();
+            DoExpansionUnits();
+        }
+
+
+        public void DoCustomBaseTechCivics(int rate)
+        {
+            DoTechnologies(rate);
+            DoCivics(rate);
+        }
+
+        public void DoCustomDLCTechCivics(int rate)
+        {
+            DoExpansionTechs(rate);
+            DoExpansionCivics(rate);
+        }
+
+
+
 
         XmlNode GetByName(string name, XmlDocument doc)
         {
@@ -32,80 +80,77 @@ namespace Civ6Changer
             return xmlNode;
         }
 
-        public void DoTechnologies()
+        private void DoTechnologies() { DoTechnologies(RATE); }
+        private void DoTechnologies(int rate)
         {
-            PathName = Path.Combine(DirName, "Technologies.xml");
+            PathName = Path.Combine(BaseDirName, "Technologies.xml");
             Doc.Load(PathName);
 
-            MainNode = Doc.SelectSingleNode("/GameInfo/Technologies");
+            MainNode = Doc.SelectSingleNode("/GameInfo/Technologies/Row[@TechnologyType='TECH_POTTERY']");
+            //Orginal pottery is 25
+            int prevRate = int.Parse(MainNode.Attributes["Cost"].Value) / 25;
 
-            if (int.Parse(RowNodes[1].Attributes["Cost"].Value) != 500)
+            XmlNodeList mainNodes = Doc.SelectNodes("GameInfo/Technologies/Row");
+            foreach (XmlNode node in RowNodes)
             {
-                foreach (XmlNode row in RowNodes)
-                {
-                    if (row.NodeType == XmlNodeType.Element)
-                    {
-                        var cost = int.Parse(row.Attributes["Cost"].Value);
-                        cost *= 20;
-                        row.Attributes["Cost"].Value = cost.ToString();
-                    }
-                }
-
-                Say("Technologies.xml Success");
-                Doc.Save(PathName);
+                node.Attributes["Cost"].Value = (int.Parse(node.Attributes["Cost"].Value) / prevRate).ToString();
+                node.Attributes["Cost"].Value = (int.Parse(node.Attributes["Cost"].Value) * rate).ToString();
             }
-            else { Say("Technologies.xml has already been changed."); }
+
+            Say("Technologies.xml Success");
+            Doc.Save(PathName);
+           
         }
 
-
-        public void DoCivics()
+        private void DoCivics() { DoCivics(RATE); }
+        private void DoCivics(int rate)
         {
-            PathName = Path.Combine(DirName, "Civics.xml");
+            PathName = Path.Combine(BaseDirName, "Civics.xml");
             Doc.Load(PathName);
 
-            MainNode = Doc.SelectSingleNode("/GameInfo/Civics");
-
-            if(int.Parse(RowNodes[1].Attributes["Cost"].Value) != 400)
+            MainNode = Doc.SelectSingleNode("/GameInfo/Civics/Row[@CivicType = 'CIVIC_CODE_OF_LAWS']");
+            //Original code of laws is 20
+            int prevRate = int.Parse(MainNode.Attributes["Cost"].Value) / 20;
+            
+            
+            XmlNodeList mainNodes = Doc.SelectNodes("/GameInfo/Civics/Row");
+            foreach (XmlNode node in mainNodes)
             {
-                foreach(XmlNode row in RowNodes)
-                {
-                    if (row.NodeType == XmlNodeType.Element)
-                    {
-                        var cost = int.Parse(row.Attributes["Cost"].Value);
-                        cost *= 20;
-                        row.Attributes["Cost"].Value = cost.ToString();
-                    }
-                }
-
-                Say("Civics.xml Success");
-                Doc.Save(PathName);
+                node.Attributes["Cost"].Value = (int.Parse(node.Attributes["Cost"].Value) / prevRate).ToString();
+                node.Attributes["Cost"].Value = (int.Parse(node.Attributes["Cost"].Value) * rate).ToString();
             }
-            else { Say("Civics.xml has already been changed."); }
+
+            Say("Civics.xml Success");
+            Doc.Save(PathName);
+           
         }
 
-        public void DoLeaders()
-        {
-            int counter = 0;
-            PathName = Path.Combine(DirName, "Leaders.xml");
+        private void DoLeaders()
+        {         
+            PathName = Path.Combine(BaseDirName, "Leaders.xml");
             Doc.Load(PathName);
-            MainNode = Doc.DocumentElement.SelectSingleNode("/GameInfo/Modifiers/Row[ModifierId= 'HIGH_DIFFICULTY_COMBAT_SCALING']");
+            MainNode = Doc.DocumentElement.SelectSingleNode("/GameInfo/Modifiers/Row[ModifierId= 'HIGH_DIFFICULTY_COMBAT_SCALING']/OwnerRequirementSetId");
+            MainNode.InnerText = "PLAYER_IS_HUMAN"; 
+        
 
-            if (MainNode.LastChild.InnerText != "PLAYER_IS_HUMAN") { MainNode.LastChild.InnerText = "PLAYER_IS_HUMAN"; }
-            else { counter++; }
+            MainNode = Doc.DocumentElement.SelectSingleNode("/GameInfo/ModifierArguments/Row[ModifierId='HIGH_DIFFICULTY_COMBAT_SCALING']/Extra");
+            MainNode.InnerText = "4";
 
-            MainNode = Doc.DocumentElement.SelectSingleNode("/GameInfo/Modifiers/Row[ModifierId= 'HIGH_DIFFICULTY_UNIT_XP_SCALING']");
+            MainNode = Doc.DocumentElement.SelectSingleNode("/GameInfo/Modifiers/Row[ModifierId= 'HIGH_DIFFICULTY_UNIT_XP_SCALING']/OwnerRequirementSetId");
+             MainNode.LastChild.InnerText = "PLAYER_IS_HUMAN"; 
+           
 
-            if (MainNode.LastChild.InnerText != "PLAYER_IS_HUMAN") { MainNode.LastChild.InnerText = "PLAYER_IS_HUMAN"; }
-            else { counter++; }
+            MainNode = Doc.DocumentElement.SelectSingleNode("/GameInfo/ModifierArguments/Row[ModifierId='HIGH_DIFFICULTY_UNIT_XP_SCALING']/Extra");
+            MainNode.InnerText = "10";
 
-            if(counter > 0) { Say("Leaders.xml has already been changed"); }
-            else { Say("Leaders.xml Success"); Doc.Save(PathName); }
-
+            Doc.Save(PathName);
+            Say("Leaders.xml Success");
+             
         }
 
-        public void DoUnits()
+        private void DoUnits()
         {
-            PathName = Path.Combine(DirName, "Units.xml");
+            PathName = Path.Combine(BaseDirName, "Units.xml");
             Doc.Load(PathName);
             MainNode = Doc.SelectSingleNode("/GameInfo/Units");
 
@@ -122,51 +167,39 @@ namespace Civ6Changer
             else { Say("Units.xml has already been changed."); }            
         }
 
-        public bool DoMaps()
+        private bool DoMaps()
         {
-            PathName = Path.Combine(DirName, "Maps.xml");
+            PathName = Path.Combine(BaseDirName, "Maps.xml");
             Doc.Load(PathName);
 
             if(Doc != null)
             {
-                MainNode = Doc.SelectSingleNode("/GameInfo/Maps");
-                var hugeNode = MainNode.LastChild; // Should be Huge Map
+                MainNode = Doc.SelectSingleNode("/GameInfo/Maps/Row[@MapSizeType = 'MAPSIZE_HUGE']");              
 
-                if (int.Parse(hugeNode.Attributes["GridWidth"].Value) != 128)
+                if (int.Parse(MainNode.Attributes["GridWidth"].Value) != 128)
                 {
-                    hugeNode.Attributes["GridWidth"].Value = "128";
-                    hugeNode.Attributes["GridHeight"].Value = "80";
+                    MainNode.Attributes["GridWidth"].Value = "128";
+                    MainNode.Attributes["GridHeight"].Value = "80";
                     Say("Maps.xml Success");
                     Doc.Save(PathName);
                 }
-                else { Say("Maps.xml has already been changed"); }
+                else { Say("Maps has already been changed"); }
             }
             return true;
         }
 
-        public bool DoRoutes()
+        private bool DoRoutes()
         {           
-            PathName = Path.Combine(DirName, "Routes.xml");
+            PathName = Path.Combine(BaseDirName, "Routes.xml");
             Doc.Load(PathName);
 
             int counter = 0;
 
             if(Doc != null)
-            {
-                //This part for the ValidBuildUnits
-                MainNode = Doc.SelectSingleNode("/GameInfo/Route_ValidBuildUnits");            
-                
-                var check = (XmlElement)RowNodes[0];
-
-                if (check.GetAttribute("UnitType") != "UNIT_BUILDER")
-                {
-                    foreach (XmlNode node in RowNodes) { node.Attributes["UnitType"].Value = "UNIT_BUILDER"; }                                    
-                }
-                else { counter++; }
-
+            {                                                     
                 //This part for movement cost
                 MainNode = Doc.SelectSingleNode("/GameInfo/Routes");               
-                check = (XmlElement)RowNodes[0];
+                var check = (XmlElement)RowNodes[0];
 
                 if (double.Parse(check.GetAttribute("MovementCost")) != .75 )
                 {
@@ -176,14 +209,160 @@ namespace Civ6Changer
                     RowNodes[3].Attributes["MovementCost"].Value = ".125";                 
                 }else { counter++; }
 
-                if(counter == 0) { Say("Routes.xml Success"); Doc.Save(PathName); }
+                if(counter == 0)
+                {
+                    Say("Routes Success");
+                    Doc.Save(PathName);
+                }
                 else { Say("Routes.xml has already been changed"); }             
             }
 
             return true;
         }
 
-        void Say(string text) { Console.WriteLine(text); }
+        private void DoPolicies()
+        {
+            PathName = Path.Combine(BaseDirName, "Policies.xml");
+            Doc.Load(PathName);
 
+            int counter = 0;
+
+            MainNode = Doc.SelectSingleNode("/GameInfo/ModifierArguments/Row[ModifierId = 'CONSCRIPTION_UNITMAINTENANCEDISCOUNT']/Value");
+            if (MainNode.InnerText != "3") { MainNode.InnerText = "3"; }
+            else { counter++; }
+
+            MainNode = Doc.SelectSingleNode("/GameInfo/ModifierArguments/Row[ModifierId = 'LEVEEENMASSE_UNITMAINTENANCEDISCOUNT']/Value");
+            if(MainNode.InnerText != "6") { MainNode.InnerText = "6"; }
+            else { counter++; }
+
+            if(counter == 0)
+            {
+                Say("Policies Success");
+                Doc.Save(PathName);
+            }
+            else { Say("Policies.xml has already been changed"); }                    
+        }
+
+        private void DoGlobalParameters()
+        {
+            PathName = Path.Combine(BaseDirName, "GlobalParameters.xml");
+            Doc.Load(PathName);
+
+            MainNode = Doc.SelectSingleNode("/GameInfo/GlobalParameters/Replace[@Name = 'COMBAT_HEAL_NAVAL_NEUTRAL']");
+            MainNode.Attributes["Value"].Value = "10";
+
+            MainNode = Doc.SelectSingleNode("/GameInfo/GlobalParameters/Replace[@Name = 'EXPERIENCE_BARB_SOFT_CAP']");
+            MainNode.Attributes["Value"].Value = "10";
+
+            MainNode = Doc.SelectSingleNode("/GameInfo/GlobalParameters/Replace[@Name = 'EXPERIENCE_COMBAT_RANGED']");
+            MainNode.Attributes["Value"].Value = "4";
+
+            MainNode = Doc.SelectSingleNode("/GameInfo/GlobalParameters/Replace[@Name = 'EXPERIENCE_MAX_BARB_LEVEL']");
+            MainNode.Attributes["Value"].Value = "6";         
+
+            MainNode = Doc.SelectSingleNode("/GameInfo/GlobalParameters/Replace[@Name = 'EXPERIENCE_MAXIMUM_ONE_COMBAT']");
+            MainNode.Attributes["Value"].Value = "30";
+
+            Doc.Save(PathName);
+            Say("Global Parameters Successfull");
+
+        }
+        
+
+        //Do the Expansion stuff here now
+        private void DoExpansionUnits()
+        {
+            PathName = Path.Combine(DLCDirName, "Expansion2_Units.xml");
+            Doc.Load(PathName);                                                 
+
+            foreach(var unit in DocFiles.DLCUnitList)
+            {
+                MainNode = Doc.SelectSingleNode("/GameInfo/Units_XP2/Row[@UnitType = '" + unit + "']");
+                MainNode.Attributes["ResourceCost"].Value = "20";
+                MainNode.Attributes.Remove(MainNode.Attributes["ResourceMaintenanceAmount"]);
+            }
+
+            Doc.Save(PathName);
+            Say("Expansion Units Successfull");
+        }
+
+        private void DoExpansionTechs() { DoExpansionTechs(RATE); }
+        private void DoExpansionTechs(int rate)
+        {
+            PathName = Path.Combine(DLCDirName, "Expansion2_Technologies.xml");
+            Doc.Load(PathName);
+
+            MainNode = Doc.SelectSingleNode("/GameInfo/Technologies/Row[@TechnologyType = 'TECH_BUTTRESS']");
+            //Original Buttress is 300
+            int prevRate = (int.Parse(MainNode.Attributes["Cost"].Value) / 300);
+          
+            XmlNodeList mainNodes = Doc.SelectNodes("/GameInfo/Technologies/Row");
+            foreach (XmlNode node in mainNodes)
+            {
+                node.Attributes["Cost"].Value = (int.Parse(node.Attributes["Cost"].Value) / prevRate).ToString();
+                node.Attributes["Cost"].Value = (int.Parse(node.Attributes["Cost"].Value) * rate).ToString();
+            }
+
+            mainNodes = Doc.SelectNodes("/GameInfo/TechnologyRandomCosts/Row");
+            foreach (XmlNode node in mainNodes)
+            {
+                node.Attributes["Cost"].Value = (int.Parse(node.Attributes["Cost"].Value) / prevRate).ToString();
+                node.Attributes["Cost"].Value = (int.Parse(node.Attributes["Cost"].Value) * rate).ToString();
+            }
+
+            Doc.Save(PathName);
+            Say("Expansion Technologies Success");                      
+        }
+
+        private void DoExpansionCivics() { DoExpansionCivics(RATE); }
+
+        private void DoExpansionCivics(int rate)
+        {
+            PathName = Path.Combine(DLCDirName, "Expansion2_Civics.xml");
+            Doc.Load(PathName);           
+
+            MainNode = Doc.SelectSingleNode("/GameInfo/Civics/Row[@CivicType = 'CIVIC_ENVIRONMENTALISM']");
+            //Original envirionmentalism is 2880
+            int prevRate = (int.Parse(MainNode.Attributes["Cost"].Value) / 2880);
+
+            XmlNodeList mainNodes = Doc.SelectNodes("/GameInfo/Civics/Row");
+            foreach(XmlNode node in mainNodes)
+            {
+                node.Attributes["Cost"].Value = (int.Parse(node.Attributes["Cost"].Value) / prevRate).ToString();
+                node.Attributes["Cost"].Value = (int.Parse(node.Attributes["Cost"].Value) * rate).ToString();
+            }
+
+            mainNodes = Doc.SelectNodes("/GameInfo/CivicRandomCosts/Row");
+            foreach (XmlNode node in mainNodes)
+            {
+                node.Attributes["Cost"].Value = (int.Parse(node.Attributes["Cost"].Value) / prevRate).ToString();
+                node.Attributes["Cost"].Value = (int.Parse(node.Attributes["Cost"].Value) * rate).ToString();
+            }
+
+            //Firaxis... why you no architecture?
+            mainNodes = Doc.SelectNodes("/GameInfo/Civics/Update/Set/Cost");
+            foreach (XmlNode node in mainNodes)
+            {
+                node.InnerText = (int.Parse(node.InnerText) / prevRate).ToString();
+                node.InnerText = (int.Parse(node.InnerText) * rate).ToString();
+            }
+
+            Doc.Save(PathName);
+            Console.WriteLine("Expansion Civics Success");
+        }
+
+        private void DoExpansionRoutes()
+        {
+            PathName = Path.Combine(DLCDirName, "Expansion2_Routes.xml");
+            Doc.Load(PathName);
+
+            MainNode = Doc.SelectSingleNode("/GameInfo/Routes/Row[@RouteType = 'ROUTE_RAILROAD']");
+            MainNode.Attributes["MovementCost"].Value = ".1";
+
+            Doc.Save(PathName);
+            Say("Expansion Routes successfull");
+        }               
+
+        void Say(string text) { Console.WriteLine(text); }
     }
 }
