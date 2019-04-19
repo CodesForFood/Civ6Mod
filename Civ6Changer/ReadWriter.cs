@@ -88,18 +88,24 @@ namespace Civ6Changer
 
             MainNode = Doc.SelectSingleNode("/GameInfo/Technologies/Row[@TechnologyType='TECH_POTTERY']");
             //Orginal pottery is 25
-            int prevRate = int.Parse(MainNode.Attributes["Cost"].Value) / 25;
+            int prevRate = int.Parse(MainNode.Attributes["Cost"].Value) / 25;      
 
             XmlNodeList mainNodes = Doc.SelectNodes("GameInfo/Technologies/Row");
-            foreach (XmlNode node in RowNodes)
+            foreach (XmlNode node in mainNodes)
             {
-                node.Attributes["Cost"].Value = (int.Parse(node.Attributes["Cost"].Value) / prevRate).ToString();
-                node.Attributes["Cost"].Value = (int.Parse(node.Attributes["Cost"].Value) * rate).ToString();
+                node.Attributes["Cost"].Value = (int.Parse(node.Attributes["Cost"].Value) / prevRate).ToString();              
+                node.Attributes["Cost"].Value = (int.Parse(node.Attributes["Cost"].Value) * rate).ToString();     
             }
 
-            Say("Technologies.xml Success");
-            Doc.Save(PathName);
-           
+            if (int.Parse(MainNode.Attributes["Cost"].Value) == (25 * rate))
+            {
+                Say("Technologies.xml Success");
+                Doc.Save(PathName);
+            }
+            else
+            {
+                Say("Something went wrong in base technologies");
+            }                       
         }
 
         private void DoCivics() { DoCivics(RATE); }
@@ -110,8 +116,7 @@ namespace Civ6Changer
 
             MainNode = Doc.SelectSingleNode("/GameInfo/Civics/Row[@CivicType = 'CIVIC_CODE_OF_LAWS']");
             //Original code of laws is 20
-            int prevRate = int.Parse(MainNode.Attributes["Cost"].Value) / 20;
-            
+            int prevRate = int.Parse(MainNode.Attributes["Cost"].Value) / 20;            
             
             XmlNodeList mainNodes = Doc.SelectNodes("/GameInfo/Civics/Row");
             foreach (XmlNode node in mainNodes)
@@ -137,7 +142,7 @@ namespace Civ6Changer
             MainNode.InnerText = "4";
 
             MainNode = Doc.DocumentElement.SelectSingleNode("/GameInfo/Modifiers/Row[ModifierId= 'HIGH_DIFFICULTY_UNIT_XP_SCALING']/OwnerRequirementSetId");
-             MainNode.LastChild.InnerText = "PLAYER_IS_HUMAN"; 
+            MainNode.LastChild.InnerText = "PLAYER_IS_HUMAN"; 
            
 
             MainNode = Doc.DocumentElement.SelectSingleNode("/GameInfo/ModifierArguments/Row[ModifierId='HIGH_DIFFICULTY_UNIT_XP_SCALING']/Extra");

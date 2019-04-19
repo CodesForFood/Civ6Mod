@@ -84,7 +84,7 @@ namespace Civ6Changer
 
         
         public void GetDirectory()
-        {
+        {       
             Console.WriteLine("Please enter the full path to your game directory:");
             var dirName = Console.ReadLine();
             try
