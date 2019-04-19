@@ -1,8 +1,8 @@
 # Civ6Mod
 This changes the XML files in Civilization 6 to make the game better.
+Now works for Gathering Storm Expansion
 
-Point it to your Data directory in game folder, typically
-\Base\Assets\Gameplay\Data
+Point it to the base game directory, the parent folder of the Base and DLC folder.
 
 Makes Technologies and Civics 20x longer to research, making each era more meaning full.
 Changes base movement of certain units: Scouts, Rangers, and modern naval units in particular.
