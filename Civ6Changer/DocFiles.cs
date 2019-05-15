@@ -78,15 +78,16 @@ namespace Civ6Changer
             "UNIT_GERMAN_UBOAT",
             "UNIT_BRAZILIAN_MINAS_GERAES"
         };
-
-
+        
         public DocFiles() { }
 
         
-        public void GetDirectory()
+        public int GetDirectory()
         {       
-            Console.WriteLine("Please enter the full path to your game directory:");
+            Console.WriteLine("Please enter the full path to your game directory, or enter 'quit' to exit.");
             var dirName = Console.ReadLine();
+            if (dirName.Equals("quit")) { return 0; }
+
             try
             {
                 BaseDir = new DirectoryInfo(Path.Combine(dirName, BASEPATH));
@@ -95,6 +96,12 @@ namespace Civ6Changer
             catch(Exception e)
             {
                 Console.WriteLine(e.Message);
+                GetDirectory();
+            }
+
+            if(!BaseDir.Exists && !DLCDir.Exists)
+            {
+                Console.WriteLine("Directories were not found.");
                 GetDirectory();
             }
           
@@ -126,7 +133,8 @@ namespace Civ6Changer
                 Console.WriteLine("404: Base game data folder was NOT found" +
                     "\n" + BR);
                 GetDirectory();
-            }        
+            }
+            return 1;
         }
 
         private void CheckFiles(DirectoryInfo dir, List<string> fileList)

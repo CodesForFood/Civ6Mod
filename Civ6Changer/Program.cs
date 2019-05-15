@@ -10,7 +10,29 @@ namespace Civ6Changer
     {
         public static readonly string MENU1 = "<1>Do All Files \n" +
             "<2>Change Technologies and Civics \n" +
-            "<3>Exit";       
+            "<3>Exit";
+
+        static void Main(string[] args)
+        {
+
+            Console.WriteLine("Welcome");
+
+            DocFiles doc = new DocFiles();
+            int flag = doc.GetDirectory();
+
+            if (flag == 0) { return; }
+
+            ReadWriter readWrite;
+
+            if (doc.UseDLC)
+                readWrite = new ReadWriter(doc.BaseDir.FullName, doc.DLCDir.FullName);
+            else
+                readWrite = new ReadWriter(doc.BaseDir.FullName);
+
+            ShowFirstMenu(readWrite, doc);
+
+            Console.ReadKey();
+        }
 
         private static void ShowFirstMenu(ReadWriter readWrite, DocFiles doc)
         {
@@ -79,7 +101,17 @@ namespace Civ6Changer
 
             if(int.TryParse(Console.ReadLine(), out choice))
             {
-                if(choice != -1)
+                if (choice < -1)
+                {
+                    Console.WriteLine("The rate must be a positive number, try again.");
+                    DoTechCivics(readWrite, doc);
+                }
+                else if(choice == 0)
+                {
+                    Console.WriteLine("Rate can't be 0");
+                    DoTechCivics(readWrite, doc);
+                }
+                else if(choice > 0)
                 {
                     readWrite.DoCustomBaseTechCivics(choice);
                     if (doc.UseDLC)
@@ -103,25 +135,7 @@ namespace Civ6Changer
 
 
 
-        static void Main(string[] args)
-        {
-
-            Console.WriteLine("Welcome");
-
-            DocFiles doc = new DocFiles();
-            doc.GetDirectory();
-            ReadWriter readWrite;
-
-            if (doc.UseDLC)
-                readWrite = new ReadWriter(doc.BaseDir.FullName, doc.DLCDir.FullName);
-            else
-                readWrite = new ReadWriter(doc.BaseDir.FullName);
-
-            ShowFirstMenu(readWrite, doc);
-
-            Console.ReadKey();
-        }
-      
+        
 
 
 
